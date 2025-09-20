@@ -1,0 +1,116 @@
+<!-- app/templates/data_management.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Работа с данными{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">Работа с данными</h1>
+    <a href="{{ url_for('admin.management.admin_page') }}" class="text-blue-600 hover:underline mt-2 inline-block">&larr; Назад в админ-панель</a>
+</div>
+
+<!-- Сетка для форм импорта -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    
+    <!-- Левый блок: Добавить деталь вручную -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Добавить деталь вручную</h2>
+        {% if not part_form.route_template.choices %}
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
+                <p>Сначала необходимо <a href="{{ url_for('admin.management.add_route') }}" class="font-bold hover:underline">создать технологический маршрут</a>.</p>
+            </div>
+        {% else %}
+            <form action="{{ url_for('admin.part.add_single_part') }}" method='post' novalidate enctype="multipart/form-data" class="space-y-4">
+                {{ part_form.hidden_tag() }}
+                
+                <div>
+                    {{ part_form.product.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ part_form.product(class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
+                </div>
+                
+                <div>
+                    {{ part_form.part_id.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ part_form.part_id(class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
+                </div>
+
+                <div>
+                    {{ part_form.name.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ part_form.name(class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
+                </div>
+
+                <div>
+                    {{ part_form.material.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ part_form.material(class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
+                </div>
+
+                <div>
+                    {{ part_form.size.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ part_form.size(class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
+                </div>
+
+                <div>
+                    {{ part_form.quantity_total.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ part_form.quantity_total(class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
+                </div>
+
+                <div>
+                    {{ part_form.route_template.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ part_form.route_template(class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md") }}
+                </div>
+
+                <div>
+                    {{ part_form.drawing.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ part_form.drawing(class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100") }}
+                </div>
+
+                {{ part_form.submit(class='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer') }}
+            </form>
+        {% endif %}
+    </div>
+    
+    <!-- Правый блок: Массовый импорт -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Массовый импорт из Excel/CSV</h2>
+        <div class="bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 mb-4" role="alert">
+            <p class="font-bold">Инструкция:</p>
+            <ul class="list-disc list-inside mt-2 text-sm">
+                <li>Импорт присваивает деталям маршрут, отмеченный "по умолчанию", если операции не указаны.</li>
+                <li>Если для набора операций маршрут не найден, он будет создан автоматически.</li>
+                <li>Чертежи при массовом импорте не загружаются.</li>
+                <li>Файл должен содержать колонки: "Обозначение", "Наименование", "Кол-во", "Прим." (для материала).</li>
+            </ul>
+        </div>
+        <form action="{{ url_for('admin.data.upload_excel') }}" method='post' enctype='multipart/form-data' novalidate class="space-y-4">
+            {{ upload_form.hidden_tag() }}
+            <div>
+                {{ upload_form.file.label(class="block text-sm font-medium text-gray-700") }}
+                {{ upload_form.file(class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100") }}
+                {% for error in upload_form.file.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {{ upload_form.submit(class='w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer') }}
+        </form>
+    </div>
+
+</div>
+
+<!-- Разделитель -->
+<hr class="my-8 border-gray-300">
+
+<!-- Секция экспорта -->
+<div class="bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">Экспорт всех данных</h2>
+    <div class="bg-green-50 border-l-4 border-green-400 text-green-700 p-4 mb-4" role="alert">
+        <p class="font-bold">Информация:</p>
+        <p class="mt-2 text-sm">
+            Нажатие на кнопку ниже выгрузит CSV-файл, содержащий <strong>все детали</strong>, которые есть в базе данных на данный момент.
+        </p>
+    </div>
+    <a href="{{ url_for('admin.data.export_parts') }}" class="w-full md:w-auto inline-flex justify-center py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer">
+        Выгрузить все детали в CSV
+    </a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,125 @@
+<!-- app/templates/select_stage.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Сканирование: {{ part.part_id }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold text-gray-800 break-all">{{ part.name }}</h1>
+        <p class="text-gray-600 mb-6">{{ part.part_id }}</p>
+
+        {% if next_stage %}
+            <div class="mb-8 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+                <h2 class="text-xl font-semibold text-blue-800">Следующий этап: {{ next_stage.name }}</h2>
+                <p class="text-blue-700">Подтвердите выполнение этапа для указанного количества.</p>
+            </div>
+            
+            <form id="confirm-stage-form" action="{{ url_for('main.actions.confirm_stage', part_id=part.part_id, stage_id=next_stage.id) }}" method="POST" novalidate class="space-y-4">
+                {{ form.hidden_tag() }}
+                <div>
+                    {{ form.quantity.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ form.quantity(class="mt-1 block w-full p-2 border border-gray-300 rounded-md") }}
+                    {% for error in form.quantity.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                </div>
+                {% if not current_user.is_authenticated %}
+                <div>
+                    {{ form.operator_name.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ form.operator_name(class="mt-1 block w-full p-2 border border-gray-300 rounded-md", id="operator-name-input") }}
+                    {% for error in form.operator_name.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                </div>
+                {% endif %}
+                <div class="pt-4">
+                    {{ form.submit(class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md", id="confirm-submit-btn") }}
+                </div>
+            </form>
+
+            {% if (current_user.is_authenticated and (current_user.can(Permission.SEND_TO_REWORK) or current_user.can(Permission.SEND_TO_SCRAP))) and (next_stage.can_rework or next_stage.can_scrap) %}
+            <div class="mt-8 border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">Другие действия</h3>
+                <form action="{{ url_for('main.actions.handle_action', part_id=part.part_id, stage_id=next_stage.id) }}" method="POST" novalidate class="space-y-4">
+                    {{ rework_scrap_form.hidden_tag() }}
+                    <div>
+                        {{ rework_scrap_form.quantity.label(class="block text-sm font-medium text-gray-700") }}
+                        {{ rework_scrap_form.quantity(class="mt-1 block w-full p-2 border border-gray-300 rounded-md") }}
+                    </div>
+                    <div>
+                        {{ rework_scrap_form.comment.label(class="block text-sm font-medium text-gray-700") }}
+                        {{ rework_scrap_form.comment(class="mt-1 block w-full p-2 border border-gray-300 rounded-md", rows="3") }}
+                    </div>
+                    <div class="flex space-x-4">
+                         {% if next_stage.can_rework and current_user.can(Permission.SEND_TO_REWORK) %}
+                            <button type="submit" name="action" value="rework" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md">На доработку</button>
+                        {% endif %}
+                        {% if next_stage.can_scrap and current_user.can(Permission.SEND_TO_SCRAP) %}
+                            <button type="submit" name="action" value="scrap" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">В брак</button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+
+        {% else %}
+             <div class="text-center">
+                <h2 class="text-2xl font-bold text-green-600">Все этапы завершены!</h2>
+                <p class="text-gray-600 mt-2">Производство для данной детали полностью завершено.</p>
+                <div class="mt-6">
+                    <a href="{{ url_for('main.main_pages.dashboard') }}" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md">Вернуться на панель</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- --- НАЧАЛО ИЗМЕНЕНИЯ: Скрипт для интеграции со сканером --- -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const operatorInput = document.getElementById('operator-name-input');
+    const form = document.getElementById('confirm-stage-form');
+    
+    // 1. Автоматически устанавливаем фокус на поле ввода, если оно есть
+    if (operatorInput) {
+        operatorInput.focus();
+    }
+
+    // 2. Логика для перехвата быстрого ввода со сканера
+    let lastKeypressTime = 0;
+    let inputBuffer = '';
+
+    document.addEventListener('keydown', function(event) {
+        const currentTime = new Date().getTime();
+        
+        // Если прошло много времени с последнего нажатия, сбрасываем буфер
+        if (currentTime - lastKeypressTime > 100) { 
+            inputBuffer = '';
+        }
+        
+        lastKeypressTime = currentTime;
+
+        if (event.key === 'Enter') {
+            // Если в буфере что-то есть (сканер что-то ввел) и форма существует
+            if (inputBuffer.length > 0 && form) {
+                event.preventDefault(); // Предотвращаем стандартную отправку формы
+                
+                // Проверяем, куда вводил сканер. Если в поле оператора, то все хорошо.
+                // Если вводил "в никуда", то вставляем данные в поле.
+                if (document.activeElement !== operatorInput && operatorInput) {
+                    operatorInput.value = inputBuffer;
+                }
+                
+                // Отправляем форму
+                form.submit();
+            }
+            inputBuffer = ''; // Очищаем буфер после Enter
+        } else if (event.key && event.key.length === 1) {
+            // Добавляем в буфер только печатные символы
+            inputBuffer += event.key;
+        }
+    });
+});
+</script>
+<!-- --- КОНЕЦ ИЗМЕНЕНИЯ --- -->
+{% endblock %}

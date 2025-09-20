@@ -1,0 +1,203 @@
+<!-- app/templates/history.html -->
+
+{% extends "base.html" %}
+
+{% from '_part_hierarchy.html' import render_children %}
+
+{% block title %}История: {{ part.part_id }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    
+    <!-- Заголовок и навигация -->
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800 break-all">{{ part.name }}</h1>
+        <p class="text-lg text-gray-600">{{ part.part_id }}</p>
+        <a href="{{ url_for('main.main_pages.dashboard') }}" class="text-blue-600 hover:underline mt-2 inline-block">&larr; Назад на панель</a>
+    </div>
+
+    <!-- Основная информация о детали -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4 border-b pb-2">Основная информация</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <strong class="block text-gray-600">Изделие:</strong>
+                <span class="text-gray-800">{{ part.product_designation }}</span>
+            </div>
+            <div>
+                <strong class="block text-gray-600">Материал:</strong>
+                <span class="text-gray-800">{{ part.material }}</span>
+            </div>
+             <div>
+                <strong class="block text-gray-600">Размер:</strong>
+                <span class="text-gray-800">{{ part.size or 'Не указан' }}</span>
+            </div>
+            <div>
+                <strong class="block text-gray-600">Количество в партии:</strong>
+                <span class="text-gray-800">{{ part.quantity_total }} шт.</span>
+            </div>
+            <div>
+                <strong class="block text-gray-600">Текущий статус:</strong>
+                <span class="font-semibold text-blue-600">{{ part.current_status }}</span>
+            </div>
+            <div>
+                <strong class="block text-gray-600">Ответственный:</strong>
+                <span id="responsible-user-display">{{ part.responsible.username if part.responsible else 'Не назначен' }}</span>
+                {% if current_user.is_authenticated and current_user.can(Permission.EDIT_PARTS) %}
+                    <!-- --- НАЧАЛО ИСПРАВЛЕНИЯ: Добавляем data-атрибуты с URL --- -->
+                    <button id="change-responsible-btn" 
+                            data-form-url="{{ url_for('admin.part.change_responsible_form', part_id=part.part_id) }}"
+                            data-action-url="{{ url_for('admin.part.change_responsible', part_id=part.part_id) }}"
+                            class="ml-2 text-blue-500 hover:text-blue-700 text-sm">[изменить]</button>
+                    <!-- --- КОНЕЦ ИСПРАВЛЕНИЯ --- -->
+                {% endif %}
+            </div>
+             <div>
+                <strong class="block text-gray-600">Технологический маршрут:</strong>
+                {% if part.route_template %}
+                    <span class="text-gray-800">{{ part.route_template.name }}</span>
+                    {% if current_user.is_authenticated and current_user.can(Permission.EDIT_PARTS) %}
+                        <a href="{{ url_for('admin.part.change_part_route', part_id=part.part_id) }}" class="ml-2 text-blue-500 hover:text-blue-700 text-sm">[изменить]</a>
+                    {% endif %}
+                {% else %}
+                    <span class="text-gray-500 italic">Не назначен</span>
+                     {% if current_user.is_authenticated and current_user.can(Permission.EDIT_PARTS) %}
+                        <a href="{{ url_for('admin.part.change_part_route', part_id=part.part_id) }}" class="ml-2 text-blue-500 hover:text-blue-700 text-sm">[назначить]</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+         {% if part.drawing_filename %}
+            <div class="mt-6">
+                <strong class="block text-gray-600 mb-2">Чертеж:</strong>
+                <a href="{{ url_for('admin.part.serve_drawing', filename=part.drawing_filename) }}" target="_blank">
+                    <img src="{{ url_for('admin.part.serve_drawing', filename=part.drawing_filename) }}" alt="Чертеж детали {{ part.part_id }}" class="max-w-xs md:max-w-md rounded-lg shadow-md">
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Иерархия изделия -->
+    {% if part.child_associations.first() %}
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4 border-b pb-2">Состав изделия</h2>
+        <ul class="space-y-2">
+            {{ render_children(part) }}
+        </ul>
+        {% if current_user.is_authenticated and current_user.can(Permission.ADD_PARTS) %}
+        <div class="mt-6">
+             <h3 class="text-lg font-semibold mb-3">Добавить новый узел/компонент</h3>
+             <form action="{{ url_for('admin.part.add_child_part', parent_part_id=part.part_id) }}" method="POST" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                {{ child_form.hidden_tag() }}
+                <div>
+                    {{ child_form.part_id.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ child_form.part_id(class="mt-1 block w-full p-2 border border-gray-300 rounded-md") }}
+                </div>
+                <div>
+                    {{ child_form.name.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ child_form.name(class="mt-1 block w-full p-2 border border-gray-300 rounded-md") }}
+                </div>
+                 <div>
+                    {{ child_form.material.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ child_form.material(class="mt-1 block w-full p-2 border border-gray-300 rounded-md") }}
+                </div>
+                 <div>
+                    {{ child_form.quantity_total.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ child_form.quantity_total(class="mt-1 block w-full p-2 border border-gray-300 rounded-md") }}
+                </div>
+                <div>
+                    {{ child_form.submit(class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md") }}
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- История и примечания -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">История и примечания</h2>
+            <div class="space-y-6">
+                {% for item in combined_history %}
+                    {% if item.type == 'status' %}
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-lg font-bold">
+                                {% if item.status_type == 'COMPLETED' %}✓{% elif item.status_type == 'REWORK' %}⟲{% else %}✖{% endif %}
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm text-gray-500">{{ item.timestamp.strftime('%d.%m.%Y %H:%M') }} - {{ item.user }}</p>
+                                <p class="text-md font-medium text-gray-800">{{ item.details }}</p>
+                                {% if item.comment %}
+                                <p class="text-sm text-gray-600 mt-1 italic bg-gray-100 p-2 rounded"><strong>Причина:</strong> {{ item.comment }}</p>
+                                {% endif %}
+                                {% if current_user.is_authenticated and current_user.can(Permission.EDIT_PARTS) and item.status_type == 'COMPLETED' %}
+                                <form action="{{ url_for('admin.part.cancel_stage', history_id=item.id) }}" method="post" class="inline mt-1 form-confirm" data-text="Отменить этот этап? Действие необратимо.">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="text-xs text-red-500 hover:text-red-700">Отменить</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% elif item.type == 'note' %}
+                        <div class="flex items-start">
+                             <div class="flex-shrink-0 h-10 w-10 rounded-full bg-yellow-400 text-white flex items-center justify-center text-lg font-bold">✎</div>
+                             <div class="ml-4 flex-1">
+                                <p class="text-sm text-gray-500">{{ item.timestamp.strftime('%d.%m.%Y %H:%M') }} - <strong>{{ item.user }}</strong>
+                                {% if item.stage %}<span class="text-xs bg-gray-200 text-gray-700 rounded-full px-2 py-0.5 ml-2">{{ item.stage }}</span>{% endif %}
+                                </p>
+                                <div id="note-text-{{ item.id }}" class="prose max-w-none text-md text-gray-800">{{ item.details|nl2br }}</div>
+                                {% if current_user.is_authenticated and (current_user.id == item.author_id or current_user.is_admin()) %}
+                                <div class="mt-2 text-xs space-x-2">
+                                    <!-- --- НАЧАЛО ИСПРАВЛЕНИЯ: Добавляем data-атрибуты с URL --- -->
+                                    <button class="text-blue-500 hover:underline edit-note-btn" 
+                                            data-note-id="{{ item.id }}"
+                                            data-action-url="{{ url_for('main.actions.edit_note', note_id=item.id) }}">Редактировать</button>
+                                    <form action="{{ url_for('main.actions.delete_note', note_id=item.id) }}" method="POST" class="inline form-confirm" data-text="Удалить это примечание?">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="text-red-500 hover:underline">Удалить</button>
+                                    </form>
+                                    <!-- --- КОНЕЦ ИСПРАВЛЕНИЯ --- -->
+                                </div>
+                                {% endif %}
+                             </div>
+                        </div>
+                    {% elif item.type == 'responsible' %}
+                         <div class="flex items-start">
+                             <div class="flex-shrink-0 h-10 w-10 rounded-full bg-purple-500 text-white flex items-center justify-center text-lg font-bold">👤</div>
+                             <div class="ml-4">
+                                <p class="text-sm text-gray-500">{{ item.timestamp.strftime('%d.%m.%Y %H:%M') }} - {{ item.user }}</p>
+                                <p class="text-md font-medium text-gray-800">{{ item.details }}</p>
+                             </div>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-gray-500">История действий и примечания отсутствуют.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <div class="bg-white p-6 rounded-lg shadow-md self-start">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Добавить примечание</h2>
+            <form action="{{ url_for('main.actions.add_note', part_id=part.part_id) }}" method="POST">
+                {{ note_form.hidden_tag() }}
+                <div class="space-y-4">
+                    <div>
+                        {{ note_form.stage.label(class="block text-sm font-medium text-gray-700") }}
+                        {{ note_form.stage(class="mt-1 block w-full p-2 border border-gray-300 rounded-md") }}
+                    </div>
+                    <div>
+                        {{ note_form.text.label(class="block text-sm font-medium text-gray-700") }}
+                        {{ note_form.text(class="mt-1 block w-full p-2 border border-gray-300 rounded-md", rows="4") }}
+                    </div>
+                    <div class="flex justify-end">
+                        {{ note_form.submit(class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md") }}
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

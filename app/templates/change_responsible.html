@@ -1,0 +1,23 @@
+<!-- app/templates/_change_responsible_form.html -->
+
+{# 
+  Этот шаблон предназначен ИСКЛЮЧИТЕЛЬНО для вставки в модальное окно SweetAlert2.
+  Он содержит только саму форму, без лишней HTML-разметки.
+#}
+<form id="change-responsible-form-modal" class="space-y-4">
+    {{ form.hidden_tag() }}
+    
+    <div>
+        <p class="text-sm text-gray-600">Текущий ответственный: 
+            <span class="font-semibold">{{ part.responsible.username if part.responsible else 'Не назначен' }}</span>
+        </p>
+    </div>
+
+    <div>
+        {{ form.responsible.label(class="block text-sm font-medium text-gray-700") }}
+        {{ form.responsible(class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md") }}
+        {% for error in form.responsible.errors %}
+            <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+        {% endfor %}
+    </div>
+</form>

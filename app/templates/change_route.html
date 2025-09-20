@@ -1,0 +1,46 @@
+<!-- app/templates/change_route.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Смена маршрута для {{ part.part_id }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold text-gray-800 mb-2">Смена технологического маршрута</h1>
+    <p class="text-gray-600 mb-6">для детали <span class="font-semibold">{{ part.name }} ({{ part.part_id }})</span></p>
+
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+        <div class="flex">
+            <div class="py-1"><svg class="fill-current h-6 w-6 text-yellow-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zM9 5v6h2V5H9zm0 8h2v2H9v-2z"/></svg></div>
+            <div>
+                <p class="font-bold">Внимание!</p>
+                <p class="text-sm">Смена маршрута возможна только для деталей, которые еще не были запущены в производство (не имеют истории прохождения этапов).</p>
+            </div>
+        </div>
+    </div>
+    
+    <form method="post" novalidate class="space-y-6">
+        {{ form.hidden_tag() }}
+
+        <div>
+            <p class="block text-sm font-medium text-gray-700">Текущий маршрут:</p>
+            <p class="mt-1 text-md font-semibold text-gray-900">
+                {{ part.route_template.name if part.route_template else 'Не назначен' }}
+            </p>
+        </div>
+
+        <div>
+            {{ form.new_route.label(class="block text-sm font-medium text-gray-700") }}
+            {{ form.new_route(class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md") }}
+            {% for error in form.new_route.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            <!-- --- НАЧАЛО ИСПРАВЛЕНИЯ: Обновляем url_for --- -->
+            <a href="{{ url_for('main.main_pages.history', part_id=part.part_id) }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-md">Отмена</a>
+            <!-- --- КОНЕЦ ИСПРАВЛЕНИЯ --- -->
+            {{ form.submit(class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

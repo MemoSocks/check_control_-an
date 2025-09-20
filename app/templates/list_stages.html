@@ -1,0 +1,136 @@
+<!-- app/templates/list_stages.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Справочник этапов{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">Справочник этапов</h1>
+        <a href="{{ url_for('admin.management.admin_page') }}" class="text-blue-600 hover:underline mt-2 inline-block">&larr; Назад в админ-панель</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <!-- Список существующих этапов -->
+    <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Существующие этапы</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Название этапа</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Можно в брак?</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Можно на доработку?</th>
+                        <th class="px-6 py-3"></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for stage in stages %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap font-medium">{{ stage.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if stage.can_scrap %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Да</span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Нет</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if stage.can_rework %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Да</span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Нет</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{{ url_for('admin.management.list_stages', edit_id=stage.id) }}" class="text-blue-600 hover:text-blue-900">Редактировать</a>
+                            <form action="{{ url_for('admin.management.delete_stage', stage_id=stage.id) }}" method="post" class="inline ml-4 form-confirm" data-text="Удалить этап '{{ stage.name }}'?">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="text-red-600 hover:text-red-900">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">Справочник этапов пуст.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Форма добавления/редактирования -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        {% set edit_id = request.args.get('edit_id')|int(-1) %}
+        {% set stage_to_edit = stages|selectattr('id', 'equalto', edit_id)|first %}
+        
+        {% if stage_to_edit %}
+            <h2 class="text-xl font-semibold mb-4">Редактировать этап: {{ stage_to_edit.name }}</h2>
+            <!-- --- НАЧАЛО ИЗМЕНЕНИЯ: Добавляем класс к форме --- -->
+            <form action="{{ url_for('admin.management.edit_stage', stage_id=stage_to_edit.id) }}" method="post" class="disable-on-no-change">
+            <!-- --- КОНЕЦ ИЗМЕНЕНИЯ --- -->
+                {{ form.hidden_tag() }}
+                <div class="space-y-4">
+                    <div>
+                        {{ form.name.label(class="block text-sm font-medium text-gray-700") }}
+                        {{ form.name(class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md", value=stage_to_edit.name) }}
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            {{ form.can_scrap(class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded", checked=stage_to_edit.can_scrap) }}
+                        </div>
+                        <div class="ml-3 text-sm">
+                            {{ form.can_scrap.label(class="font-medium text-gray-700") }}
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            {{ form.can_rework(class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded", checked=stage_to_edit.can_rework) }}
+                        </div>
+                        <div class="ml-3 text-sm">
+                            {{ form.can_rework.label(class="font-medium text-gray-700") }}
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <a href="{{ url_for('admin.management.list_stages') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-md">Отмена</a>
+                        {{ form.submit(class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-opacity") }}
+                    </div>
+                </div>
+            </form>
+        {% else %}
+            <h2 class="text-xl font-semibold mb-4">Добавить новый этап</h2>
+            <form action="{{ url_for('admin.management.add_stage') }}" method="post">
+                {{ form.hidden_tag() }}
+                <div class="space-y-4">
+                    <div>
+                        {{ form.name.label(class="block text-sm font-medium text-gray-700") }}
+                        {{ form.name(class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md") }}
+                    </div>
+                     <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            {{ form.can_scrap(class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded") }}
+                        </div>
+                        <div class="ml-3 text-sm">
+                            {{ form.can_scrap.label(class="font-medium text-gray-700") }}
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            {{ form.can_rework(class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded") }}
+                        </div>
+                        <div class="ml-3 text-sm">
+                            {{ form.can_rework.label(class="font-medium text-gray-700") }}
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        {{ form.submit(class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md") }}
+                    </div>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

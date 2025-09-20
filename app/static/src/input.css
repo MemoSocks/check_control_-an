@@ -1,0 +1,71 @@
+/* app/static/src/input.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+  Этот слой используется для добавления наших собственных
+  кастомных классов, которые можно будет использовать в HTML.
+*/
+@layer components {
+    /* Анимация для подсветки обновленных/новых строк на дашборде */
+    .highlight-new {
+        animation: highlight-fade-in 3s ease-out;
+    }
+    .highlight-update {
+        animation: highlight-fade-update 3s ease-out;
+    }
+
+    /* 
+     Стили для мобильной адаптации страницы сканирования
+    */
+    .scan-page header, .scan-page footer {
+        @apply hidden;
+    }
+    .scan-page main {
+        @apply p-0;
+    }
+    .scan-page {
+        @apply bg-gray-100;
+    }
+
+    @screen md {
+        .scan-page header, .scan-page footer {
+            @apply block;
+        }
+        .scan-page main {
+            @apply py-10;
+        }
+        .scan-page {
+            @apply bg-transparent;
+        }
+    }
+
+    /* --- НАЧАЛО ИЗМЕНЕНИЯ: Стили для контекстного меню и шкалы маршрута --- */
+    .route-timeline .animate-pulse {
+        animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    .context-menu-item {
+        @apply block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100;
+    }
+
+    .context-menu-item-destructive {
+        @apply hover:bg-red-50 hover:text-red-700;
+    }
+    /* --- КОНЕЦ ИЗМЕНЕНИЯ --- */
+}
+
+/* 
+  Здесь мы определяем сами анимации.
+*/
+@keyframes highlight-fade-in {
+    from { background-color: #d1fae5; opacity: 0; } /* green-100 */
+    50% { background-color: #d1fae5; opacity: 1; }
+    to { background-color: transparent; opacity: 1; }
+}
+@keyframes highlight-fade-update {
+    from { background-color: #e0e7ff; } /* indigo-100 */
+    to { background-color: transparent; }
+}

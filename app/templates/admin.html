@@ -1,0 +1,71 @@
+<!-- app/templates/admin.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Администрирование{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">Администрирование</h1>
+    <p class="mt-1 text-gray-600">Выберите раздел для управления.</p>
+</div>
+
+<!-- Сетка для разделов управления -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <!-- Карточка: Журналы -->
+    {% if current_user.can(Permission.VIEW_AUDIT_LOG) %}
+    <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Журналы</h2>
+        <p class="text-gray-600 mb-4">Просмотр всех действий в системе.</p>
+        <div class="space-y-2">
+            <a href="{{ url_for('admin.user.audit_log') }}" class="block text-blue-600 hover:underline">Журнал деталей</a>
+            <a href="{{ url_for('admin.user.user_log') }}" class="block text-blue-600 hover:underline">Журнал пользователей</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Карточка: Отчеты -->
+    {% if current_user.can(Permission.VIEW_REPORTS) %}
+    <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Отчеты и аналитика</h2>
+        <p class="text-gray-600 mb-4">Статистика и анализ производственных данных.</p>
+        <a href="{{ url_for('admin.report.reports_index') }}" class="text-blue-600 font-semibold hover:underline">Перейти к отчетам &rarr;</a>
+    </div>
+    {% endif %}
+
+    <!-- Карточка: Справочники -->
+    {% if current_user.can(Permission.MANAGE_STAGES) or current_user.can(Permission.MANAGE_ROUTES) %}
+    <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Справочники</h2>
+        <p class="text-gray-600 mb-4">Управление этапами и технологическими маршрутами.</p>
+        <div class="space-y-2">
+            {% if current_user.can(Permission.MANAGE_STAGES) %}<a href="{{ url_for('admin.management.list_stages') }}" class="block text-blue-600 hover:underline">Справочник этапов</a>{% endif %}
+            {% if current_user.can(Permission.MANAGE_ROUTES) %}<a href="{{ url_for('admin.management.list_routes') }}" class="block text-blue-600 hover:underline">Управление маршрутами</a>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Карточка: Пользователи и Роли -->
+    {% if current_user.can(Permission.MANAGE_USERS) or current_user.is_admin() %}
+    <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Пользователи</h2>
+        <p class="text-gray-600 mb-4">Управление учетными записями и правами доступа.</p>
+        <div class="space-y-2">
+            {% if current_user.is_admin() %}<a href="{{ url_for('admin.user.list_roles') }}" class="block text-blue-600 hover:underline">Управление ролями</a>{% endif %}
+            {% if current_user.can(Permission.MANAGE_USERS) %}<a href="{{ url_for('admin.user.list_users') }}" class="block text-blue-600 hover:underline">Управление пользователями</a>{% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Карточка: Работа с данными -->
+    {% if current_user.can(Permission.ADD_PARTS) %}
+    <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow">
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">Работа с данными</h2>
+        <p class="text-gray-600 mb-4">Массовая загрузка деталей из файла и выгрузка всех данных в CSV.</p>
+        <a href="{{ url_for('admin.data.data_management') }}" class="text-blue-600 font-semibold hover:underline">Перейти к управлению данными &rarr;</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
